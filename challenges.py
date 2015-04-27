@@ -1,21 +1,3 @@
-# headers for the data
-headers = ['party', 'handicapped-infants', 'water-project-cost-sharing', 
-'adoption-of-the-budget-resolution', 'physician-fee-freeze', 
-'el-salvador-aid', 'religious-groups-in-schools', 'anti-satellite-test-ban', 
-'aid-to-nicraguan-contras', 'mx-missile', 'immigration', 
-'synfuels-corporation-cutback', 'education-spending', 'superfund-right-to-sue', 
-'crime', 'duty-free-exports', 'export-administration-act-south-africa']
-
-# pickled the csv data...no formatting made
-with open('data.pkl', 'w') as f:
-    pickle.dump(data, f)
-
-with open('data.pkl', 'r') as f:
-    data_unformatted = pickle.load(f)
-
-import pandas as pd
-import numpy as np
-import pickle
 
 import pandas as pd
 import numpy as np
