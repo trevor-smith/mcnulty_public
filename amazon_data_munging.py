@@ -37,17 +37,22 @@ df_reviews['unixReviewTime'] = pd.to_datetime(df_reviews['unixReviewTime'],unit=
 df_reviews['overall'].hist(bins = 5)
 
 # gotta format the helpful column
-df_reviews['helpful'] = df_reviews['helpful'].astype(str)
-df_reviews['helpful'] = df_reviews['helpful'].str.replace('[','').str.replace(']','')
-df_reviews['helpful'] = pd.DataFrame(df_reviews.helpful.str.split(',').tolist(), columns = "helpful overall".split())
+df_reviews['helpful_votes'] = df_reviews.helpful.apply(lambda x: x[0])
+df_reviews['overall_votes'] = df_reviews.helpful.apply(lambda x: x[1])
 
-df_reviews['helpful'] = df_reviews.helpful.astype(float)
-df_reviews['overall'] = df_reviews.overall.astype(float)
+# looking at most unhelpful!
+df_reviews['unhelpfulness'] = df_reviews.overall_votes - df_reviews.helpful_votes
+x = df_reviews.sort("unhelpfulness", ascending=False).head()
 
 # let's create another column just for fun :P
 df_reviews['percent helpful'] = df_reviews['helpful'] / df_reviews['overall']
 df_reviews['percent helpful'] = df_reviews['percent helpful'].clip_upper(1)
 
+# plotting distribution of percent helpful
+df_reviews['percent helpful'].hist(bins = 9)
 
+# create column to say if review was helpful or not
+# set threshold at 40%
+df_reviews['review helpful?'] = np.where(df_reviews['percent helpful'] >.4, 'Yes', 'No')
 
 
