@@ -45,14 +45,33 @@ df_reviews['unhelpfulness'] = df_reviews.overall_votes - df_reviews.helpful_vote
 x = df_reviews.sort("unhelpfulness", ascending=False).head()
 
 # let's create another column just for fun :P
-df_reviews['percent helpful'] = df_reviews['helpful'] / df_reviews['overall']
-df_reviews['percent helpful'] = df_reviews['percent helpful'].clip_upper(1)
+df_reviews['percent_helpful'] = df_reviews['helpful_votes'] / df_reviews['overall_votes']
 
 # plotting distribution of percent helpful
-df_reviews['percent helpful'].hist(bins = 9)
+df_reviews['percent_helpful'].hist(bins = 9).show()
 
 # create column to say if review was helpful or not
 # set threshold at 40%
-df_reviews['review helpful?'] = np.where(df_reviews['percent helpful'] >.4, 'Yes', 'No')
+df_reviews['review_helpful'] = np.where(df_reviews['percent_helpful'] >.4, 'Yes', 'No')
 
+# unhelpfulness LOL
+df_reviews['unhelpfulness'] = df_reviews.overall_votes - df_reviews.helpful_votes
+x = df_reviews.sort("unhelpfulness", ascending=False).head()
+print x.reviewText.iloc[0]
+
+# sentiment analysis stuff
+from textblob import TextBlob
+blob = TextBlob(text)
+
+# print polarity and subjectivity
+for sentence in blob.sentences:
+    print[sentence.sentiment]
+
+# lengths and stuff
+len(blob.words)
+len(blob.sentences)
+
+# characters per sentence
+for sentence in blob.sentences:
+    print len(sentence)
 
