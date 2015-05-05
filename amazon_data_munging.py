@@ -184,3 +184,12 @@ print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 # setting different thresholds for a 'helpful' review
 df_new.review_helpful = np.where((df_new.percent_helpful > .7) & (df_new.helpful_votes > 5), "Yes", "No")
 
+# gotta convert timedeltas
+df_new.time_from_first_review = df_new.time_from_first_review / np.timedelta64(1,'D')
+
+# let's create a scatter matrix
+scatter_features = ['overall', 'helpful_votes', 'overall_votes', 'percent_helpful', 'polarity', 'len_words', 'len_sentences', 'subjectivity', 'words_per_sentence', 'time_from_first_review']
+from pandas.tools.plotting import scatter_matrix
+scatter_matrix(df_new[scatter_features], alpha=0.2, figsize=(15, 15), diagonal='kde')
+
+# ok this didn't tell us much
