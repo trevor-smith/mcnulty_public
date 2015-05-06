@@ -9,8 +9,8 @@ def parse(path):
   for l in g:
     yield eval(l)
 
-obj_reviews = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/reviews_sports_outdoors_sample.txt')
-obj_meta = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/meta_sports_outdoors_sample.txt')
+obj_reviews = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/reviews_sports_outdoors.txt')
+obj_meta = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/meta_sports_outdoors.txt')
 
 # loop through every review and product and create list of dictionaries
 reviews = []
@@ -34,15 +34,15 @@ df_reviews.drop('reviewTime')
 df_reviews['unixReviewTime'] = pd.to_datetime(df_reviews['unixReviewTime'],unit='s')
 
 # checking the distribution of review scores
-df_reviews['overall'].hist(bins = 5)
+# df_reviews['overall'].hist(bins = 5)
 
 # gotta format the helpful column
 df_reviews['helpful_votes'] = df_reviews.helpful.apply(lambda x: x[0])
 df_reviews['overall_votes'] = df_reviews.helpful.apply(lambda x: x[1])
 
 # looking at most unhelpful!
-df_reviews['unhelpfulness'] = df_reviews.overall_votes - df_reviews.helpful_votes
-x = df_reviews.sort("unhelpfulness", ascending=False).head()
+# df_reviews['unhelpfulness'] = df_reviews.overall_votes - df_reviews.helpful_votes
+# x = df_reviews.sort("unhelpfulness", ascending=False).head()
 
 # let's create another column just for fun :P
 df_reviews['percent_helpful'] = df_reviews['helpful_votes'] / df_reviews['overall_votes']
@@ -52,10 +52,10 @@ df_reviews['percent_helpful'].hist(bins = 9).show()
 
 # create column to say if review was helpful or not
 # set threshold at 50%
-df_reviews['review_helpful'] = np.where(df_reviews['percent_helpful'] >.5, 'Yes', 'No')
+df_reviews['review_helpful'] = np.where(df_reviews['percent_helpful'] >.7, 'Yes', 'No')
 
 # unhelpfulness LOL
-print x.reviewText.iloc[0]
+# print x.reviewText.iloc[0]
 
 # sentiment analysis stuff
 from textblob import TextBlob
@@ -72,20 +72,20 @@ df_reviews['len_sentences'] = df_reviews['reviewText'].apply(lambda x: len(TextB
 df_reviews['subjectivity'] = df_reviews['reviewText'].apply(lambda x: TextBlob(x).sentiment.subjectivity)
 
 # ok let's plot their distributions
-df_reviews.polarity.hist(bins = 20)
-# normal
-df_reviews.subjectivity.hist(bins = 20)
-# normal
-df_reviews.len_words.hist(bins = 20)
-# left skew
-df_reviews.len_sentences.hist(bins = 20)
+# df_reviews.polarity.hist(bins = 20)
+# # normal
+# df_reviews.subjectivity.hist(bins = 20)
+# # normal
+# df_reviews.len_words.hist(bins = 20)
+# # left skew
+# df_reviews.len_sentences.hist(bins = 20)
 # left skew
 # log transforms may be needed for the last two variables
 df_reviews.len_words = df_reviews.len_words.apply(np.log)
 df_reviews.len_sentences = df_reviews.len_sentences.apply(np.log)
 
 # what does the percent helpful variable look like?
-df_reviews.percent_helpful.hist(bins = 20)
+# df_reviews.percent_helpful.hist(bins = 20)
 # a little over 5k reviews not helpful at all
 # almost 25k reviews 100% helpful...interesting patttern
 
@@ -181,7 +181,7 @@ bayes_clf = GaussianNB()
 scores = cross_validation.cross_val_score(bayes_clf, X3, y3, cv=5)
 print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
-# setting different thresholds for a 'helpful' review
+setting different thresholds for a 'helpful' review
 df_new.review_helpful = np.where((df_new.percent_helpful > .7) & (df_new.helpful_votes > 5), "Yes", "No")
 
 # gotta convert timedeltas
@@ -193,3 +193,69 @@ from pandas.tools.plotting import scatter_matrix
 scatter_matrix(df_new[scatter_features], alpha=0.2, figsize=(15, 15), diagonal='kde')
 
 # ok this didn't tell us much
+# lets read in meta data
+# obj_meta = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/meta_sports_outdoors_sample2.txt')
+# meta = []
+# for i in obj_meta:
+#     meta.append(i)
+
+# merge them!
+df_new2 = pd.merge(df_new, df_meta, how='inner', on='asin' )
+
+df_new2.price = df_new2.price.replace(np.nan, 0)
+
+features4 = ['overall', 'polarity', 'subjectivity', 'len_sentences', 'len_words', 'words_per_sentence', 'time_from_first_review', 'price']
+X4 = df_new2[features4]
+y4 = df_new2.review_helpful
+
+rf_clf = RandomForestClassifier()
+scores = cross_validation.cross_val_score(rf_clf, X4, y4, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+bayes_clf = GaussianNB()
+scores = cross_validation.cross_val_score(bayes_clf, X4, y4, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+rf_clf = RandomForestClassifier(n_estimators=1000, max_depth=200)
+scores = cross_validation.cross_val_score(rf_clf, X4, y4, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+from sklearn.ensemble import AdaBoostClassifier
+ab_clf = AdaBoostClassifier(n_estimators=1000)
+scores = cross_validation.cross_val_score(ab_clf, X4, y4, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+from sklearn.ensemble import GradientBoostingClassifier
+gb_clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.5, max_depth=10, random_state=0)
+scores = cross_validation.cross_val_score(ab_clf, X4, y4, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+df_temp = df_new2[['asin', 'overall_votes']]
+df_product = df_temp.groupby('asin').quantile(.25)
+df_product = df_product.rename(columns ={'overall_votes':'lower_quantile'})
+df_new3 = pd.merge(df_new2, df_product, how='left', on='asin')
+
+from sklearn.neural_network import BernoulliRBM
+nn_clf = BernoulliRBM(n_components=2)
+scores = cross_validation.cross_val_score(ab_clf, X4, y4, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+df_new2['int_helpful'] = df_new2.percent_helpful * 10
+df_new2.int_helpful = df_new2.int_helpful.astype(int)
+df_new2.boxplot('words_per_sentence', 'int_helpful')
+df_new2.boxplot('time_from_first_review', 'int_helpful')
+df_new2.boxplot('len_words', 'overall')
+df_new2.boxplot('polarity', 'overall')
+df_new2.boxplot('polarity', 'int_helpful')
+
+# sentence complexity
+df_new2['sentence_complexity'] = df_new2.reviewText.apply(lambda x: float(len(set(TextBlob(x).words))) / float(len(TextBlob(x).words)))
+df_new2.sentence_complexity.hist(bins=20)
+df_new2.plot(kind='scatter', x='sentence_complexity', y='len_words')
+df_new2.boxplot('sentence_complexity', 'int_helpful')
+features5 = ['overall', 'polarity', 'subjectivity', 'len_sentences', 'len_words', 'words_per_sentence', 'time_from_first_review', 'price', 'sentence_complexity']
+X5 = df_new2[features5]
+y5 = df_new2.review_helpful
+rf_clf = RandomForestClassifier(n_estimators=1000, max_depth=100)
+scores = cross_validation.cross_val_score(rf_clf, X5, y5, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
