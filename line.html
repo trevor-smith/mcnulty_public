@@ -1,0 +1,203 @@
+<head>
+    <meta charset="utf-8">
+    <title>Input text with D3</title> <!-- adapted from http://javadude.wordpress.com/2012/05/17/d3-js-with-dynamic-data/ -->
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.2/d3.js"></script>
+
+    <style>
+        body {font-family: monospace; line-height: 160%; font-size: 18px; }
+        ul {list-style: none; margin: 0; padding: 0;}
+        li {display: inline-block; min-width: 80px; padding: 10px; background-color: #eee; margin: 0;}
+        input {border: 1px dotted #ccc; background: white; font-family: monospace; padding: 10px 20px; font-size: 18px; margin: 20px 10px 20px 0; color: red;}
+        input:focus { background-color:yellow; outline: none;}
+    </style>
+</head>
+    <body>
+
+        <form name="myform" onSubmit="return handleClick()">
+            <input name="Submit"  type="submit" value="Add to list" >
+            <input type="text" id="myVal" placeholder="Add some text&hellip;">
+        </form>
+
+        <ul></ul>
+
+        <script>
+
+            var dataset = [];
+
+
+            function handleClick(event){
+                console.log(document.getElementById("myVal").value)
+                draw(document.getElementById("myVal").value)
+                return false;
+            }
+
+            function draw(val){
+                d3.select("body").select("ul").append("li");
+                dataset.push(val);
+                var p = d3.select("body").selectAll("li")
+                .data(dataset)
+                .text(function(d,i){return i + ": " + d;})
+            }
+
+        </script>
+
+
+    </body>
+</html>
+
+
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.js"></script>
+<script>
+
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var parseDate = d3.time.format("%d-%b-%y").parse;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+var line = d3.svg.line()
+    .x(function(d) { return x(d.word); })
+    .y(function(d) { return y(d.probability); });
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var data = d3.csv("data2.csv", function(error, data) {
+  data.forEach(function(d) {
+    d.word = d.word;
+    d.probability = +d.probability;
+  });
+
+  x.domain(d3.extent(data, function(d) { return d.word; }));
+  y.domain(d3.extent(data, function(d) { return d.probability; }));
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Probability")
+      .style("font-size", "20px");
+
+function getSmoothInterpolation() {
+  var interpolate = d3.scale.linear()
+      .domain([0, 1])
+      .range([1, indexSeries.length + 1]);
+
+  return function(t) {
+      var flooredX = Math.floor(interpolate(t));
+      var interpolatedLine = indexSeries.slice(0, flooredX);
+
+      if(flooredX > 0 && flooredX < indexSeries.length) {
+          var weight = interpolate(t) - flooredX;
+          var weightedLineAverage = indexSeries[flooredX].y * weight + indexSeries[flooredX-1].y * (1-weight);
+          interpolatedLine.push( {"x":interpolate(t)-1, "y":weightedLineAverage} );
+          }
+
+      return lineFunction(interpolatedLine);
+      }
+  };
+
+  // d3.select('#exampleFive')
+  //   .append('path')
+  //   .attr('id', 'data')
+  //   .attr('fill', 'none')
+  //   .attr('stroke', 'green')
+  //   .attr('stroke-width', 2);
+
+  // d3.select('#exampleFive')
+  //   .append('text')
+  //   .attr('fill', 'black')
+  //   .attr('y', 20)
+  //   .attr('x', 600)
+  //   .style('cursor', 'hand')
+  //   .text('Click me')
+  //   .on('click'), function() {
+  //     d3.select('#exampleFive > line')
+  //     .transition()
+  //     .duration(3000)
+  //     .attrTween('d', getSmoothInterpolation);
+  //   });
+  //   }
+
+  function somethingCool() {
+    d3.select(svg)
+      .attr("class", "line")
+      .style("stroke", "red");
+    }
+
+  svg.append("path")
+      .datum(data)
+      .attr("class", "line")
+      .attr("d", line)
+      .style("stroke-width", 3)
+      .style("stroke", "green");
+
+  d3.select("svg")
+    .append('text')
+    .attr('fill', 'black')
+    .attr('y', 20)
+    .attr('x', 400)
+    .style('cursor', 'hand')
+    .text('Calculate Probability')
+    .style('fill', 'blue')
+    .style("font-size", "20px")
+      .on('click', somethingCool);
+      // .transition()
+      // .duration(3000)
+});
+
+</script>
