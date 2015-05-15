@@ -4,13 +4,24 @@ import pylab as pl
 %matplotlib inline
 %pylab inline
 
+def imports_all():
+    import pandas as pd
+    import matplotlib as plt
+    import pylab as pl
+    import numpy as np
+    %matplotlib inline
+    %pylab inline
+
 def parse(path):
-  g = open(path, 'r')
-  for l in g:
-    yield eval(l)
+    g = open(path, 'r')
+    for l in g:
+        yield eval(l)
 
 obj_reviews = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/reviews_sports_outdoors.txt')
 obj_meta = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/meta_sports_outdoors.txt')
+df_meta = pd.DataFrame(meta)
+df_reviews = pd.DataFrame(reviews)
+
 
 # loop through every review and product and create list of dictionaries
 reviews = []
@@ -20,32 +31,44 @@ for i in obj_reviews:
 meta = []
 for i in obj_meta:
     meta.append(i)
+    df_meta = pd.DataFrame(meta)
+    df_reviews = pd.DataFrame(reviews)
 
-df_meta = pd.DataFrame(meta)
-df_reviews = pd.DataFrame(reviews)
+def clean_columns():
+    df_meta.drop('categories', axis = 1, inplace = True)
+    df_meta.drop('imUrl', axis = 1, inplace = True)
+    df_meta.drop('related', axis = 1, inplace = True)
+    df_meta.drop('salesRank', axis = 1, inplace = True)
+    df_reviews.drop('reviewTime', axis = 1, inplace = True)
+    df_reviews['unixReviewTime'] = pd.to_datetime(df_reviews['unixReviewTime'],unit='s')
+
+
+def creating_basic_features():
+    df_reviews['helpful_votes'] = df_reviews.helpful.apply(lambda x: x[0])
+    df_reviews['overall_votes'] = df_reviews.helpful.apply(lambda x: x[1])
+    df_reviews['percent_helpful'] = df_reviews['helpful_votes'] / df_reviews['overall_votes']
+    df_reviews.review_helpful = np.where((df_reviews.percent_helpful > .7) & (df_reviews.helpful_votes > 5), "Yes", "No")
+
+def create_textblob_features():
+    from textblob import TextBlob
+    df_reviews['polarity'] = df_reviews['reviewText'].apply(lambda x: TextBlob(x).sentiment.polarity)
+    df_reviews['len_words'] = df_reviews['reviewText'].apply(lambda x: len(TextBlob(x).words))
+    df_reviews['len_sentences'] = df_reviews['reviewText'].apply(lambda x: len(TextBlob(x).sentences))
+    df_reviews['subjectivity'] = df_reviews['reviewText'].apply(lambda x: TextBlob(x).sentiment.subjectivity)
+    df_reviews['words_per_sentence'] = df_reviews.len_words / df_reviews.len_sentences
+    df_reviews['sentence_complexity'] = df_reviews.reviewText.apply(lambda x: float(len(set(TextBlob(x).words))) / float(len(TextBlob(x).words)))
+
+
 
 # dropping columns we don't need
-df_meta.drop('categories', axis = 1, inplace = True)
-df_meta.drop('imUrl', axis = 1, inplace = True)
-df_meta.drop('related', axis = 1, inplace = True)
-df_meta.drop('salesRank', axis = 1, inplace = True)
-df_reviews.drop('reviewTime')
 
-df_reviews['unixReviewTime'] = pd.to_datetime(df_reviews['unixReviewTime'],unit='s')
 
-# checking the distribution of review scores
+
+
 # df_reviews['overall'].hist(bins = 5)
 
-# gotta format the helpful column
-df_reviews['helpful_votes'] = df_reviews.helpful.apply(lambda x: x[0])
-df_reviews['overall_votes'] = df_reviews.helpful.apply(lambda x: x[1])
 
-# looking at most unhelpful!
-# df_reviews['unhelpfulness'] = df_reviews.overall_votes - df_reviews.helpful_votes
-# x = df_reviews.sort("unhelpfulness", ascending=False).head()
 
-# let's create another column just for fun :P
-df_reviews['percent_helpful'] = df_reviews['helpful_votes'] / df_reviews['overall_votes']
 
 # plotting distribution of percent helpful
 df_reviews['percent_helpful'].hist(bins = 9).show()
@@ -66,10 +89,7 @@ from textblob import TextBlob
 
 
 # some feature engineering for things I think will predict
-df_reviews['polarity'] = df_reviews['reviewText'].apply(lambda x: TextBlob(x).sentiment.polarity)
-df_reviews['len_words'] = df_reviews['reviewText'].apply(lambda x: len(TextBlob(x).words))
-df_reviews['len_sentences'] = df_reviews['reviewText'].apply(lambda x: len(TextBlob(x).sentences))
-df_reviews['subjectivity'] = df_reviews['reviewText'].apply(lambda x: TextBlob(x).sentiment.subjectivity)
+
 
 # ok let's plot their distributions
 # df_reviews.polarity.hist(bins = 20)
@@ -258,4 +278,67 @@ y5 = df_new2.review_helpful
 rf_clf = RandomForestClassifier(n_estimators=1000, max_depth=100)
 scores = cross_validation.cross_val_score(rf_clf, X5, y5, cv=5)
 print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+
+
+df_new2['int_helpful'] = df_new2.percent_helpful * 10
+df_new2.int_helpful = df_new2.int_helpful.astype(int)
+
+### new way to clean and read in data
+import pandas as pd
+import matplotlib as plt
+import pylab as pl
+import numpy as np
+%pylab inline
+
+def parse(path):
+    g = open(path, 'r')
+    for l in g:
+        yield eval(l)
+
+obj_reviews = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/reviews_sports_outdoors_sample2.txt')
+obj_meta = parse('/Users/trevorsmith/Documents/metis/mcnulty_public/meta_sports_outdoors_sample2.txt')
+
+# loop through every review and product and create list of dictionaries
+reviews = []
+for i in obj_reviews:
+    reviews.append(i)
+
+meta = []
+for i in obj_meta:
+    meta.append(i)
+
+df_meta = pd.DataFrame(meta)
+df_reviews = pd.DataFrame(reviews)
+
+def clean_columns():
+    df_meta.drop('categories', axis = 1, inplace = True)
+    df_meta.drop('imUrl', axis = 1, inplace = True)
+    df_meta.drop('related', axis = 1, inplace = True)
+    df_meta.drop('salesRank', axis = 1, inplace = True)
+    df_reviews.drop('reviewTime', axis = 1, inplace = True)
+    df_reviews['unixReviewTime'] = pd.to_datetime(df_reviews['unixReviewTime'],unit='s')
+
+def creating_basic_features():
+    df_reviews['helpful_votes'] = df_reviews.helpful.apply(lambda x: x[0])
+    df_reviews['overall_votes'] = df_reviews.helpful.apply(lambda x: x[1])
+    df_reviews['percent_helpful'] = df_reviews['helpful_votes'] / df_reviews['overall_votes']
+    df_reviews.review_helpful = np.where((df_reviews.percent_helpful > .7) & (df_reviews.helpful_votes > 5), "Yes", "No")
+
+def create_textblob_features():
+    from textblob import TextBlob
+    df_reviews['polarity'] = df_reviews['reviewText'].apply(lambda x: TextBlob(x).sentiment.polarity)
+    df_reviews['len_words'] = df_reviews['reviewText'].apply(lambda x: len(TextBlob(x).words))
+    df_reviews['len_sentences'] = df_reviews['reviewText'].apply(lambda x: len(TextBlob(x).sentences))
+    df_reviews['subjectivity'] = df_reviews['reviewText'].apply(lambda x: TextBlob(x).sentiment.subjectivity)
+    df_reviews['words_per_sentence'] = df_reviews.len_words / df_reviews.len_sentences
+    df_reviews['sentence_complexity'] = df_reviews.reviewText.apply(lambda x: float(len(set(TextBlob(x).words))) / float(len(TextBlob(x).words)))
+
+# now time to run our cleaning functions
+clean_columns()
+creating_basic_features()
+create_textblob_features()
+
+import re
+df_reviews.reviewText = df_reviews.reviewText.apply(lambda x: re.sub("[^a-zA-Z]", " ", x))
+
 
