@@ -71,55 +71,22 @@ clean_columns()
 creating_basic_features()
 # create_textblob_features()
 
-# # splitting the data into train and test
-
-# df_train, df_test = train_test_split(df_reviews, test_size=0.2, random_state=0)
-
-# we are going to create a sparse matrix using all of our features
-# we eliminate basic stop words from appearing
-# we also create n-grams from 1 (unigrams) to 5
-# vectorizer = CountVectorizer(min_df=1, stop_words='english',ngram_range=(0,6))
-
-# # now we actually create the sparse matrix by calling vectorizer on our reviewText
-# X_train = vectorizer.fit_transform(df_train.reviewText)
-# y_train = df_train.review_helpful
-# # same process for test set
-# X_test = vectorizer.transform(df_test.reviewText)
-# y_test = df_test.review_helpful
-# # Ok, now let's start testing some models!
-
-# # logistic regression
-# lg = LogisticRegression()
-# lg.fit(X_train, y_train)
-# pred_values = lg.predict(X_test)
-# true_values = y_test
-# print precision_recall_fscore_support(true_values == 'Yes', pred_values == 'Yes', average='binary')
-
-# # naive bayes
-# nb = MultinomialNB()
-# nb.fit(X_train, y_train)
-# pred_values = nb.predict(X_test)
-# true_values = y_test
-# print precision_recall_fscore_support(true_values == 'Yes', pred_values == 'Yes', average='binary')
-
-# # svm
-# svm = SVC()
-# svm.fit(X_train, y_train)
-# pred_values = svm.predict(X_test)
-# true_values = y_test
-# print precision_recall_fscore_support(true_values == 'Yes', pred_values == 'Yes', average='binary')
-
-# # random forest
-# rf = RandomForestClassifier()
-# rf.fit(X_train, y_train)
-# pred_values = rf.predict(X_test)
-# true_values = y_test
-# print precision_recall_fscore_support(true_values == 'Yes', pred_values == 'Yes', average='binary')
-
+# only taking reviews with at least 5 votes
 df_updated = df_reviews[(df_reviews.overall_votes > 5)]
-for x in np.arange(0.05,1,0.05):
+
+
+def model_accuracy(classifiers, steps):
+    """This function takes a list of classifiers and outputs their accuracy, precision, and recall for every training split you specify.  The goal is to help the user find the optimal level of training / test data split for each model.  Be warned, this can take a while on large data sets
+
+    This function takes two arguments:
+    1) the classifiers you wish to use
+        - example: ['MultinomialNB()', 'RandomForestClassifier()']
+    2) the step incrementality for your training:
+        - example: '.05'  This would split your training and test set starting at .05 and incrementing by .05 every time.  So the first pass would be testing the models using only 5% of the data as training.  The second pass would be using 10% of the data as training, etc."""
+
+
+for x in np.arange(0.05,1, steps):
     classifiers = [MultinomialNB(), RandomForestClassifier(), LogisticRegression()]
-    classifiers_text = ['naive bayes', 'random forest', 'logistic']
     df_train, df_test = train_test_split(df_updated, test_size=x, random_state=0)
     vectorizer = CountVectorizer(min_df=1, stop_words='english',ngram_range=(0,6))
     X_train = vectorizer.fit_transform(df_train.reviewText)
@@ -135,5 +102,5 @@ for x in np.arange(0.05,1,0.05):
         recall = str(precision_recall_fscore_support(true_values == 'Yes', pred_values == 'Yes', average='binary')[1])
         precision = str(precision_recall_fscore_support(true_values == 'Yes', pred_values == 'Yes', average='binary')[0])
         accuracy = str(model.score(X_test, y_test))
-        print str(model) + "training size: " + str(x)
+        print str(model) + "training size: " + str(1-x)
         print "recall: " + str(recall) + "precision: " + str(precision) + "accuracy: " + str(accuracy)
